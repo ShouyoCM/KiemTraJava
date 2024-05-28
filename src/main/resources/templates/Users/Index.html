@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="text-center">Role Management</h1>
+    <div class="mb-3">
+        <button class="btn btn-primary" onclick="showCreateForm()">Add New Role</button>
+    </div>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Role Name</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="roleTableBody">
+        <!-- Roles will be dynamically inserted here -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Create Role Modal -->
+<div class="modal" id="createRoleModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Role</h5>
+                <button type="button" class="close" onclick="closeCreateForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createRoleForm">
+                    <div class="form-group">
+                        <label for="roleName">Role Name</label>
+                        <input type="text" class="form-control" id="roleName" name="roleName" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Role Modal -->
+<div class="modal" id="updateRoleModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Role</h5>
+                <button type="button" class="close" onclick="closeUpdateForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="updateRoleForm">
+                    <input type="hidden" id="updateRoleId" name="id">
+                    <div class="form-group">
+                        <label for="updateRoleName">Role Name</label>
+                        <input type="text" class="form-control" id="updateRoleName" name="roleName" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchRoles();
+    });
+
+    function fetchRoles() {
+        fetch('/api/roles')
+            .then(response => response.json())
+            .then(data => {
+                const roleTableBody = document.getElementById('roleTableBody');
+                roleTableBody.innerHTML = '';
+                data.forEach(role => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                            <td>${role.id}</td>
+                            <td>${role.roleName}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" onclick="showUpdateForm(${role.id}, '${role.roleName}')">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteRole(${role.id})">Delete</button>
+                            </td>
+                        `;
+                    roleTableBody.appendChild(row);
+                });
+            });
+    }
+
+    function showCreateForm() {
+        document.getElementById('createRoleModal').style.display = 'block';
+    }
+
+    function closeCreateForm() {
+        document.getElementById('createRoleModal').style.display = 'none';
+    }
+
+    document.getElementById('createRoleForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        fetch('/api/roles', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                roleName: formData.get('roleName')
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                closeCreateForm();
+                fetchRoles();
+            });
+    });
+
+    function showUpdateForm(id, roleName) {
+        document.getElementById('updateRoleId').value = id;
+        document.getElementById('updateRoleName').value = roleName;
+        document.getElementById('updateRoleModal').style.display = 'block';
+    }
+
+    function closeUpdateForm() {
+        document.getElementById('updateRoleModal').style.display = 'none';
+    }
+
+    document.getElementById('updateRoleForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        fetch('/api/roles/' + formData.get('id'), {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: formData.get('id'),
+                roleName: formData.get('roleName')
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                closeUpdateForm();
+                fetchRoles();
+            });
+    });
+
+    function deleteRole(id) {
+        fetch('/api/roles/' + id, {
+            method: 'DELETE'
+        })
+            .then(() => {
+                fetchRoles();
+            });
+    }
+</script>
+</body>
+</html>
